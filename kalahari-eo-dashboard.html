@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalahari EO Node Network — Urth Dimensional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#171310;
+    --bg-panel:#211b14;
+    --bg-panel-2:#28221a;
+    --line:#3a3128;
+    --copper:#c9713c;
+    --ochre:#d9a441;
+    --sand:#e8dcc8;
+    --sand-dim:#a89a84;
+    --red:#c0453a;
+    --green:#7a9b76;
+    --blue:#6f93a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg-deep);color:var(--sand);font-family:'IBM Plex Sans',sans-serif;}
+  ::selection{background:var(--copper);color:#171310;}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#1c1712,#171310);
+  }
+  .brand{display:flex;align-items:baseline;gap:14px;}
+  .brand h1{
+    font-family:'Fraunces',serif;font-weight:700;font-size:22px;letter-spacing:0.3px;margin:0;color:var(--sand);
+  }
+  .brand span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--copper);letter-spacing:1.5px;text-transform:uppercase;}
+  .clock{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sand-dim);text-align:right;}
+  .clock b{color:var(--ochre);}
+
+  /* ---------- Vertical selector ---------- */
+  .verticals{display:flex;gap:8px;padding:14px 28px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--bg-panel);}
+  .vbtn{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+    padding:7px 13px;border-radius:3px;border:1px solid var(--line);background:transparent;color:var(--sand-dim);
+    cursor:pointer;transition:all .15s ease;
+  }
+  .vbtn:hover{border-color:var(--copper);color:var(--sand);}
+  .vbtn.active{background:var(--copper);border-color:var(--copper);color:#171310;font-weight:600;}
+
+  /* ---------- Layout grid ---------- */
+  .grid{display:grid;grid-template-columns:260px 1fr 320px;gap:1px;background:var(--line);min-height:640px;}
+  @media(max-width:980px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--bg-panel);padding:18px;}
+  .panel h2{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--copper);margin:0 0 14px 0;font-weight:600;
+  }
+
+  /* ---------- Node list ---------- */
+  .node-item{
+    padding:11px 10px;border-radius:4px;margin-bottom:6px;cursor:pointer;border:1px solid transparent;
+    transition:all .15s ease;
+  }
+  .node-item:hover{background:var(--bg-panel-2);}
+  .node-item.selected{background:var(--bg-panel-2);border-color:var(--copper);}
+  .node-item .name{font-size:13px;font-weight:600;color:var(--sand);}
+  .node-item .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sand-dim);margin-top:2px;}
+  .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;}
+  .status-ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .status-warn{background:var(--ochre);box-shadow:0 0 6px var(--ochre);}
+  .status-alert{background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+  /* ---------- Map ---------- */
+  .map-wrap{position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#241d15 0%,#171310 75%);}
+  svg#map{width:100%;height:100%;max-height:600px;}
+  .region-fill{fill:#241d15;stroke:var(--line);stroke-width:1;}
+  .region-grid line{stroke:#3a3128;stroke-width:0.5;opacity:0.5;}
+  .node-dot{cursor:pointer;}
+  .node-dot circle.core{transition:r .2s ease;}
+  .node-dot:hover circle.core{r:8;}
+  .node-label{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:var(--sand-dim);pointer-events:none;}
+  .sweep{transform-origin:50% 50%;animation:sweep 6s linear infinite;opacity:0.5;}
+  @keyframes sweep{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  .map-controls{position:absolute;top:14px;left:14px;display:flex;gap:8px;flex-direction:column;}
+  .toggle-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;
+    padding:6px 10px;border-radius:3px;border:1px solid var(--line);background:rgba(23,19,16,0.85);color:var(--sand-dim);
+    cursor:pointer;
+  }
+  .toggle-btn.on{border-color:var(--ochre);color:var(--ochre);}
+  .map-caption{position:absolute;bottom:12px;left:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sand-dim);}
+
+  /* ---------- Detail panel ---------- */
+  .detail-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin:0 0 2px 0;}
+  .detail-loc{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sand-dim);margin-bottom:16px;}
+  .reading{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line);}
+  .reading .label{font-size:12px;color:var(--sand-dim);}
+  .reading .value{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;}
+  .reading .value.warn{color:var(--ochre);}
+  .reading .value.alert{color:var(--red);}
+  .reading .value.ok{color:var(--green);}
+  canvas#chart{width:100%;height:110px;margin-top:16px;display:block;}
+  .chart-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sand-dim);text-transform:uppercase;letter-spacing:1px;margin-top:14px;}
+
+  /* ---------- Ticker ---------- */
+  .ticker{
+    display:flex;align-items:center;gap:10px;padding:12px 28px;background:var(--bg-panel-2);
+    border-top:1px solid var(--line);overflow:hidden;white-space:nowrap;
+  }
+  .ticker-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--copper);text-transform:uppercase;letter-spacing:1px;flex-shrink:0;}
+  .ticker-feed{display:flex;gap:28px;animation:scroll 30s linear infinite;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .ticker-feed span.al{color:var(--red);}
+  .ticker-feed span.wn{color:var(--ochre);}
+  .ticker-feed span.ok{color:var(--sand-dim);}
+  @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  footer{padding:16px 28px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sand-dim);letter-spacing:0.5px;border-top:1px solid var(--line);}
+  footer b{color:var(--copper);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Kalahari EO Node Network</h1>
+    <span>Urth Dimensional — Earth Observation Command</span>
+  </div>
+  <div class="clock" id="clock">— — : — — SAST<br><b>Northern Cape, ZA</b></div>
+</header>
+
+<div class="verticals" id="verticals"></div>
+
+<div class="grid">
+  <div class="panel" id="nodelist-panel">
+    <h2>Active Nodes</h2>
+    <div id="nodelist"></div>
+  </div>
+
+  <div class="panel map-wrap">
+    <div class="map-controls">
+      <button class="toggle-btn on" id="toggleEO">EO Overlay: NDVI</button>
+      <button class="toggle-btn" id="toggleSweep">Satellite Sweep: On</button>
+      <button class="toggle-btn" id="locateBtn">📍 Use My Location</button>
+    </div>
+    <svg id="map" viewBox="0 0 600 480"></svg>
+    <div class="map-caption" id="mapCaption">Node positions plotted from real coordinates · Northern Cape, ZA</div>
+  </div>
+
+  <div class="panel" id="detail-panel"></div>
+</div>
+
+<div class="ticker">
+  <span class="ticker-label">Live Feed</span>
+  <div class="ticker-feed" id="tickerFeed"></div>
+</div>
+
+<footer>
+  <b>Urth Dimensional (Pty) Ltd</b> — Kimberley, Northern Cape · Node positions &amp; live weather are real; ground-sensor readings are simulated pending hardware deployment
+</footer>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   ============================================================ */
+const VERTICALS = [
+  {id:'all', label:'All Nodes'},
+  {id:'mining', label:'Mining'},
+  {id:'water', label:'Water & Agriculture'},
+  {id:'disaster', label:'Disaster Management'},
+  {id:'health', label:'Health'},
+  {id:'infra', label:'Infrastructure & Spatial'}
+];
+
+// Real-world coordinates (approximate town/district centres, WGS84).
+// x,y on the 600x480 map are derived from lat/lon below via project(), not hand-placed.
+const NODES = [
+  {id:'n1', name:'Finsch Mine Tailings', vertical:'mining', lat:-28.3757, lon:23.4322, sensors:{
+    'Dam wall strain':{v:0.31,u:'mm/hr',status:'ok'},
+    'Dust (PM10)':{v:38,u:'µg/m³',status:'ok'},
+    'Slope tilt':{v:0.08,u:'deg',status:'ok'},
+    'Vibration':{v:2.1,u:'mm/s',status:'ok'}
+  }},
+  {id:'n2', name:'Postmasburg Open Pit', vertical:'mining', lat:-28.3500, lon:23.0667, sensors:{
+    'Dam wall strain':{v:1.94,u:'mm/hr',status:'alert'},
+    'Dust (PM10)':{v:112,u:'µg/m³',status:'warn'},
+    'Slope tilt':{v:0.61,u:'deg',status:'warn'},
+    'Vibration':{v:5.4,u:'mm/s',status:'warn'}
+  }},
+  {id:'n3', name:'Vaalharts Irrigation Block', vertical:'water', lat:-27.9833, lon:24.8167, sensors:{
+    'Soil moisture':{v:22,u:'%',status:'warn'},
+    'Water table':{v:-1.8,u:'m',status:'warn'},
+    'Canal flow':{v:4.2,u:'m³/s',status:'ok'},
+    'NDVI index':{v:0.41,u:'idx',status:'warn'}
+  }},
+  {id:'n4', name:'Douglas Farmland Cluster', vertical:'water', lat:-29.0667, lon:23.7667, sensors:{
+    'Soil moisture':{v:34,u:'%',status:'ok'},
+    'Water table':{v:-0.6,u:'m',status:'ok'},
+    'Canal flow':{v:6.8,u:'m³/s',status:'ok'},
+    'NDVI index':{v:0.63,u:'idx',status:'ok'}
+  }},
+  {id:'n5', name:'Kuruman Flood Corridor', vertical:'disaster', lat:-27.4524, lon:23.4326, sensors:{
+    'River level':{v:2.3,u:'m',status:'ok'},
+    'Rainfall (24h)':{v:41,u:'mm',status:'warn'},
+    'Soil saturation':{v:71,u:'%',status:'warn'},
+    'Slope risk':{v:0.22,u:'idx',status:'ok'}
+  }},
+  {id:'n6', name:'Kalahari Veld-fire Zone', vertical:'disaster', lat:-26.9167, lon:20.6167, sensors:{
+    'Fuel moisture':{v:9,u:'%',status:'alert'},
+    'Wind speed':{v:34,u:'km/h',status:'warn'},
+    'Surface temp':{v:41,u:'°C',status:'warn'},
+    'Smoke index':{v:0.12,u:'idx',status:'ok'}
+  }},
+  {id:'n7', name:'Galeshewe Ward Cluster', vertical:'health', lat:-28.7148, lon:24.7469, sensors:{
+    'Heat index':{v:39,u:'°C',status:'warn'},
+    'Air quality':{v:58,u:'AQI',status:'ok'},
+    'Standing water':{v:3,u:'sites',status:'warn'},
+    'Vector risk':{v:0.34,u:'idx',status:'ok'}
+  }},
+  {id:'n8', name:'Kimberley CBD Corridor', vertical:'infra', lat:-28.7382, lon:24.7499, sensors:{
+    'Settlement growth':{v:6.2,u:'%/yr',status:'warn'},
+    'Impervious surface':{v:44,u:'%',status:'ok'},
+    'Road subsidence':{v:0.4,u:'mm/mo',status:'ok'},
+    'Service gap idx':{v:0.52,u:'idx',status:'warn'}
+  }},
+  {id:'n9', name:'Springbok Agri-Belt', vertical:'water', lat:-29.6643, lon:17.8865, sensors:{
+    'Soil moisture':{v:18,u:'%',status:'alert'},
+    'Water table':{v:-3.1,u:'m',status:'alert'},
+    'Canal flow':{v:1.1,u:'m³/s',status:'warn'},
+    'NDVI index':{v:0.29,u:'idx',status:'alert'}
+  }},
+  {id:'n10', name:'Upington Solar & Water Hub', vertical:'infra', lat:-28.4478, lon:21.2561, sensors:{
+    'Settlement growth':{v:3.8,u:'%/yr',status:'ok'},
+    'Impervious surface':{v:21,u:'%',status:'ok'},
+    'Road subsidence':{v:0.1,u:'mm/mo',status:'ok'},
+    'Service gap idx':{v:0.18,u:'idx',status:'ok'}
+  }}
+];
+
+// Bounding box roughly covering the Northern Cape, used to project real lat/lon
+// onto the 600x480 map canvas (simple equirectangular projection — fine at this scale).
+const MAP_BOUNDS = { lonMin:16.3, lonMax:25.6, latMax:-26.4, latMin:-30.7 };
+function project(lat, lon){
+  const x = ((lon - MAP_BOUNDS.lonMin) / (MAP_BOUNDS.lonMax - MAP_BOUNDS.lonMin)) * 560 + 20;
+  const y = ((lat - MAP_BOUNDS.latMax) / (MAP_BOUNDS.latMin - MAP_BOUNDS.latMax)) * 440 + 20;
+  return { x, y };
+}
+NODES.forEach(n=>{
+  const p = project(n.lat, n.lon);
+  n.x = p.x; n.y = p.y;
+});
+
+// Haversine distance in km between two lat/lon points — used for the real GPS "nearest node" readout.
+function distanceKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let userLocation = null; // {lat, lon, accuracy} — set by the real browser GPS, not simulated
+
+let currentVertical = 'all';
+let selectedNode = NODES[1]; // start on an alert node for drama
+let eoOn = true;
+let sweepOn = true;
+let history = {}; // id -> array of {t, primaryValue}
+
+NODES.forEach(n=>{
+  const keys = Object.keys(n.sensors);
+  history[n.id] = Array.from({length:24},(_,i)=>{
+    const base = n.sensors[keys[0]].v;
+    return base + (Math.random()-0.5)*base*0.15;
+  });
+});
+
+/* ============================================================
+   RENDER: verticals
+   ============================================================ */
+const vWrap = document.getElementById('verticals');
+VERTICALS.forEach(v=>{
+  const b = document.createElement('button');
+  b.className = 'vbtn' + (v.id===currentVertical?' active':'');
+  b.textContent = v.label;
+  b.onclick = ()=>{ currentVertical = v.id; renderAll(); };
+  b.dataset.id = v.id;
+  vWrap.appendChild(b);
+});
+
+/* ============================================================
+   RENDER: node list
+   ============================================================ */
+function worstStatus(n){
+  const vals = Object.values(n.sensors).map(s=>s.status);
+  if(vals.includes('alert')) return 'alert';
+  if(vals.includes('warn')) return 'warn';
+  return 'ok';
+}
+
+function renderNodeList(){
+  const list = document.getElementById('nodelist');
+  list.innerHTML = '';
+  const visible = NODES.filter(n=>currentVertical==='all'||n.vertical===currentVertical);
+  visible.forEach(n=>{
+    const st = worstStatus(n);
+    const div = document.createElement('div');
+    div.className = 'node-item' + (selectedNode && selectedNode.id===n.id ? ' selected':'');
+    div.innerHTML = `<div class="name"><span class="status-dot status-${st}"></span>${n.name}</div>
+      <div class="meta">${VERTICALS.find(v=>v.id===n.vertical).label.toUpperCase()}</div>`;
+    div.onclick = ()=>{ selectedNode = n; renderAll(); };
+    list.appendChild(div);
+  });
+  if(visible.length===0){
+    list.innerHTML = '<div class="meta" style="color:var(--sand-dim);font-size:12px;">No nodes in this category yet.</div>';
+  }
+}
+
+/* ============================================================
+   RENDER: map
+   ============================================================ */
+function renderMap(){
+  const svg = document.getElementById('map');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // background region shape (stylised outline, but node dots are real projected coordinates)
+  const region = document.createElementNS(ns,'path');
+  region.setAttribute('class','region-fill');
+  region.setAttribute('d','M 60 60 L 480 40 L 560 200 L 500 400 L 200 440 L 40 320 Z');
+  svg.appendChild(region);
+
+  // grid lines
+  const grid = document.createElementNS(ns,'g');
+  grid.setAttribute('class','region-grid');
+  for(let x=0;x<=600;x+=40){
+    const l = document.createElementNS(ns,'line');
+    l.setAttribute('x1',x); l.setAttribute('y1',0); l.setAttribute('x2',x); l.setAttribute('y2',480);
+    grid.appendChild(l);
+  }
+  for(let y=0;y<=480;y+=40){
+    const l = document.createElementNS(ns,'line');
+    l.setAttribute('x1',0); l.setAttribute('y1',y); l.setAttribute('x2',600); l.setAttribute('y2',y);
+    grid.appendChild(l);
+  }
+  svg.appendChild(grid);
+
+  // EO overlay: simulated NDVI/moisture patches
+  if(eoOn){
+    const overlay = document.createElementNS(ns,'g');
+    overlay.setAttribute('opacity','0.35');
+    NODES.forEach(n=>{
+      const keys = Object.keys(n.sensors);
+      const moistureLike = n.sensors[keys[0]].v;
+      const norm = Math.max(0, Math.min(1, moistureLike / 40));
+      const color = `rgb(${Math.round(200-160*norm)}, ${Math.round(120+80*norm)}, ${Math.round(70+40*norm)})`;
+      const c = document.createElementNS(ns,'circle');
+      c.setAttribute('cx', n.x); c.setAttribute('cy', n.y); c.setAttribute('r', 55);
+      c.setAttribute('fill', color);
+      overlay.appendChild(c);
+    });
+    svg.appendChild(overlay);
+  }
+
+  // satellite sweep
+  if(sweepOn){
+    const sweepG = document.createElementNS(ns,'g');
+    sweepG.setAttribute('class','sweep');
+    sweepG.setAttribute('style','transform-box: fill-box;');
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1','300'); line.setAttribute('y1','240');
+    line.setAttribute('x2','300'); line.setAttribute('y2','30');
+    line.setAttribute('stroke','var(--ochre)'); line.setAttribute('stroke-width','1.5');
+    sweepG.appendChild(line);
+    const cx = document.createElementNS(ns,'circle');
+    cx.setAttribute('cx','300'); cx.setAttribute('cy','240'); cx.setAttribute('r','3');
+    cx.setAttribute('fill','var(--ochre)');
+    sweepG.appendChild(cx);
+    svg.appendChild(sweepG);
+  }
+
+  // nodes
+  const visible = NODES.filter(n=>currentVertical==='all'||n.vertical===currentVertical);
+  visible.forEach(n=>{
+    const st = worstStatus(n);
+    const color = st==='alert' ? 'var(--red)' : st==='warn' ? 'var(--ochre)' : 'var(--green)';
+    const g = document.createElementNS(ns,'g');
+    g.setAttribute('class','node-dot');
+    g.onclick = ()=>{ selectedNode = n; renderAll(); };
+
+    if(st==='alert'){
+      const pulse = document.createElementNS(ns,'circle');
+      pulse.setAttribute('cx', n.x); pulse.setAttribute('cy', n.y); pulse.setAttribute('r','14');
+      pulse.setAttribute('fill','none'); pulse.setAttribute('stroke', color); pulse.setAttribute('stroke-width','1.5');
+      pulse.innerHTML = '<animate attributeName="r" from="6" to="18" dur="1.6s" repeatCount="indefinite" /><animate attributeName="opacity" from="0.8" to="0" dur="1.6s" repeatCount="indefinite" />';
+      g.appendChild(pulse);
+    }
+
+    const core = document.createElementNS(ns,'circle');
+    core.setAttribute('class','core');
+    core.setAttribute('cx', n.x); core.setAttribute('cy', n.y); core.setAttribute('r', selectedNode && selectedNode.id===n.id ? 8 : 5.5);
+    core.setAttribute('fill', color);
+    core.setAttribute('stroke', selectedNode && selectedNode.id===n.id ? 'var(--sand)' : 'none');
+    core.setAttribute('stroke-width','1.5');
+    g.appendChild(core);
+
+    const label = document.createElementNS(ns,'text');
+    label.setAttribute('class','node-label');
+    label.setAttribute('x', n.x+10); label.setAttribute('y', n.y+4);
+    label.textContent = n.name.split(' ')[0];
+    g.appendChild(label);
+
+    svg.appendChild(g);
+  });
+
+  // real GPS marker — only appears once the browser has granted location access
+  if(userLocation){
+    const p = project(userLocation.lat, userLocation.lon);
+    const ug = document.createElementNS(ns,'g');
+    const ring = document.createElementNS(ns,'circle');
+    ring.setAttribute('cx',p.x); ring.setAttribute('cy',p.y); ring.setAttribute('r','10');
+    ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--blue)'); ring.setAttribute('stroke-width','1.5');
+    ring.innerHTML = '<animate attributeName="r" from="4" to="16" dur="1.8s" repeatCount="indefinite" /><animate attributeName="opacity" from="0.9" to="0" dur="1.8s" repeatCount="indefinite" />';
+    ug.appendChild(ring);
+    const dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('cx',p.x); dot.setAttribute('cy',p.y); dot.setAttribute('r','5');
+    dot.setAttribute('fill','var(--blue)'); dot.setAttribute('stroke','var(--sand)'); dot.setAttribute('stroke-width','1.5');
+    ug.appendChild(dot);
+    const lbl = document.createElementNS(ns,'text');
+    lbl.setAttribute('class','node-label'); lbl.setAttribute('x',p.x+10); lbl.setAttribute('y',p.y+4);
+    lbl.setAttribute('fill','var(--blue)'); lbl.textContent = 'You';
+    ug.appendChild(lbl);
+    svg.appendChild(ug);
+  }
+}
+
+/* ============================================================
+   RENDER: detail panel + chart
+   ============================================================ */
+function renderDetail(){
+  const panel = document.getElementById('detail-panel');
+  if(!selectedNode){ panel.innerHTML = '<h2>Node Detail</h2><p style="color:var(--sand-dim);font-size:13px;">Select a node.</p>'; return; }
+  const n = selectedNode;
+  let html = `<h2>Node Detail</h2>
+    <div class="detail-name">${n.name}</div>
+    <div class="detail-loc">${VERTICALS.find(v=>v.id===n.vertical).label} · ${n.lat.toFixed(3)}, ${n.lon.toFixed(3)}</div>
+    <div class="chart-label" style="margin-top:0;">Simulated node telemetry <span style="color:var(--sand-dim);text-transform:none;letter-spacing:0;">(no physical hardware deployed yet)</span></div>`;
+  Object.entries(n.sensors).forEach(([label, s])=>{
+    html += `<div class="reading"><span class="label">${label}</span><span class="value ${s.status}">${s.v}${s.u}</span></div>`;
+  });
+  html += `<div class="chart-label">24hr trend — ${Object.keys(n.sensors)[0]}</div><canvas id="chart" width="284" height="110"></canvas>`;
+  html += `<div class="chart-label">Live ground conditions <span style="color:var(--sand-dim);text-transform:none;letter-spacing:0;">(real-time, Open-Meteo)</span></div>
+    <div id="liveWeather" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sand-dim);padding:6px 0;">Fetching…</div>
+    <div class="chart-label">Satellite imagery <span style="color:var(--sand-dim);text-transform:none;letter-spacing:0;">(source: SANSA)</span></div>
+    <a href="http://catalogue.sansa.org.za/" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--copper);text-decoration:none;border-bottom:1px solid var(--copper);">Search SANSA EO Catalogue ↗</a>
+    <div style="font-size:10px;color:var(--sand-dim);margin-top:6px;line-height:1.5;">SANSA does not publish a live public sensor API — this links to their real imagery search/order portal. The node hardware above is what would close that gap.</div>`;
+  panel.innerHTML = html;
+  drawChart(n);
+  if(lastWeatherNodeId !== n.id){
+    lastWeatherNodeId = n.id;
+    fetchLiveWeather(n);
+  } else if(lastWeatherHtml){
+    document.getElementById('liveWeather').innerHTML = lastWeatherHtml;
+  }
+}
+let lastWeatherNodeId = null;
+let lastWeatherHtml = null;
+
+/* ============================================================
+   LIVE WEATHER — real data, fetched from Open-Meteo (no API key, CORS-open)
+   ============================================================ */
+async function fetchLiveWeather(n){
+  const el = document.getElementById('liveWeather');
+  if(!el) return;
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${n.lat}&longitude=${n.lon}&current=temperature_2m,precipitation,wind_speed_10m,relative_humidity_2m&timezone=Africa%2FJohannesburg`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('weather fetch failed');
+    const data = await res.json();
+    const cur = data.current;
+    const html = `Temp: <b style="color:var(--sand);">${cur.temperature_2m}°C</b> &nbsp;·&nbsp;
+      Rain: <b style="color:var(--sand);">${cur.precipitation}mm</b> &nbsp;·&nbsp;
+      Wind: <b style="color:var(--sand);">${cur.wind_speed_10m}km/h</b> &nbsp;·&nbsp;
+      Humidity: <b style="color:var(--sand);">${cur.relative_humidity_2m}%</b>`;
+    el.innerHTML = html;
+    lastWeatherHtml = html;
+  }catch(e){
+    el.textContent = 'Live weather unavailable right now (network blocked or offline).';
+  }
+}
+
+function drawChart(n){
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const data = history[n.id];
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = (max-min) || 1;
+  const padTop=8, padBottom=8;
+
+  // grid
+  ctx.strokeStyle = '#3a3128';
+  ctx.lineWidth = 0.5;
+  for(let i=0;i<=3;i++){
+    const y = padTop + (h-padTop-padBottom) * (i/3);
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  // line
+  ctx.strokeStyle = '#c9713c';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x = (w/(data.length-1))*i;
+    const y = padTop + (h-padTop-padBottom) * (1 - (v-min)/range);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // fill
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'rgba(201,113,60,0.35)');
+  grad.addColorStop(1,'rgba(201,113,60,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // last point
+  const lastX = w;
+  const lastY = padTop + (h-padTop-padBottom) * (1 - (data[data.length-1]-min)/range);
+  ctx.fillStyle = '#d9a441';
+  ctx.beginPath();
+  ctx.arc(lastX-2, lastY, 3, 0, Math.PI*2);
+  ctx.fill();
+}
+
+/* ============================================================
+   RENDER: ticker
+   ============================================================ */
+function buildTicker(){
+  const feed = document.getElementById('tickerFeed');
+  const entries = [];
+  NODES.forEach(n=>{
+    const st = worstStatus(n);
+    if(st==='alert') entries.push(`<span class="al">⚠ ALERT — ${n.name}: threshold breach</span>`);
+    else if(st==='warn') entries.push(`<span class="wn">△ Watch — ${n.name}: trending toward threshold</span>`);
+    else entries.push(`<span class="ok">✓ Nominal — ${n.name}</span>`);
+  });
+  const feedHtml = entries.join(' &nbsp;·&nbsp; ');
+  feed.innerHTML = feedHtml + ' &nbsp;·&nbsp; ' + feedHtml; // duplicate for seamless scroll
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+document.getElementById('toggleEO').onclick = function(){
+  eoOn = !eoOn;
+  this.classList.toggle('on', eoOn);
+  this.textContent = 'EO Overlay: ' + (eoOn ? 'NDVI' : 'Off');
+  renderMap();
+};
+document.getElementById('toggleSweep').onclick = function(){
+  sweepOn = !sweepOn;
+  this.classList.toggle('on', sweepOn);
+  this.textContent = 'Satellite Sweep: ' + (sweepOn ? 'On' : 'Off');
+  renderMap();
+};
+
+document.getElementById('locateBtn').onclick = function(){
+  const btn = this;
+  const caption = document.getElementById('mapCaption');
+  if(!navigator.geolocation){
+    caption.textContent = 'Geolocation is not supported by this browser.';
+    return;
+  }
+  btn.textContent = '📍 Locating…';
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
+      btn.textContent = '📍 Location Active';
+      btn.classList.add('on');
+      // find nearest node using a real haversine calculation against real node coordinates
+      let nearest = null, best = Infinity;
+      NODES.forEach(n=>{
+        const d = distanceKm(userLocation.lat, userLocation.lon, n.lat, n.lon);
+        if(d < best){ best = d; nearest = n; }
+      });
+      caption.textContent = `You: ${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)} (±${Math.round(userLocation.accuracy)}m) · Nearest node: ${nearest.name}, ${best.toFixed(0)} km away`;
+      renderMap();
+    },
+    err=>{
+      btn.textContent = '📍 Use My Location';
+      caption.textContent = 'Location access denied or unavailable — enable it in your browser settings to see your position on the map.';
+    },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+};
+
+/* ============================================================
+   CLOCK
+   ============================================================ */
+function tickClock(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').innerHTML = `${hh}:${mm} SAST<br><b>Northern Cape, ZA</b>`;
+}
+
+/* ============================================================
+   LIVE DATA SIMULATION
+   ============================================================ */
+function simulateUpdate(){
+  NODES.forEach(n=>{
+    Object.values(n.sensors).forEach(s=>{
+      const drift = (Math.random()-0.5) * s.v * 0.04;
+      s.v = Math.round((s.v + drift) * 100) / 100;
+    });
+    const keys = Object.keys(n.sensors);
+    history[n.id].shift();
+    history[n.id].push(n.sensors[keys[0]].v);
+  });
+}
+
+/* ============================================================
+   MASTER RENDER
+   ============================================================ */
+function renderAll(){
+  document.querySelectorAll('.vbtn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.id===currentVertical);
+  });
+  const visible = NODES.filter(n=>currentVertical==='all'||n.vertical===currentVertical);
+  if(selectedNode && !visible.includes(selectedNode)){
+    selectedNode = visible[0] || null;
+  }
+  renderNodeList();
+  renderMap();
+  renderDetail();
+  buildTicker();
+}
+
+renderAll();
+tickClock();
+setInterval(tickClock, 10000);
+setInterval(()=>{ simulateUpdate(); renderAll(); }, 4000);
+</script>
+</body>
+</html>
